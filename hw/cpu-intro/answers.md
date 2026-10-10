@@ -25,6 +25,9 @@ Stats: IO Busy  0 (0.00%)
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+因为两个进程只包含 CPU 指令，完全不涉及 I/O 操作，所以系统中没有任何会导致 CPU 空闲的等待环节。CPU 始终保持忙碌，利用率自然达到 100%。
+```
 
 ## Q2
 - Prediction / 预测:
@@ -55,6 +58,9 @@ Stats: IO Busy  5 (45.45%)
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+整个过程耗时 11 个时间单位。关键在于，当 PID 1 发起 I/O 请求后，由于没有其他进程可以接力执行，CPU 只能被动等待 I/O 完成。这段无法被利用的空闲时间，直接导致了 CPU 整体利用率的下降。
+```
 
 ## Q3
 - Prediction / 预测:
@@ -81,6 +87,9 @@ Stats: IO Busy  5 (71.43%)
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+进程的执行顺序至关重要。若能合理安排 I/O 密集型进程与 CPU 密集型进程交替运行，就能在 I/O 等待期间让 CPU 继续处理其他任务，从而提高资源利用率并缩短总耗时。
+```
 
 ## Q4
 - Prediction / 预测:
@@ -111,6 +120,9 @@ Stats: IO Busy  5 (45.45%)
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+SWITCH_ON_END 的核心逻辑是 不结束不切换 。因此，即使当前进程正在等待 I/O 完成，CPU 也不会转去执行其他进程，而是被迫空闲。这种机制使得 I/O 等待时间无法被利用，直接造成了 CPU 资源的浪费和系统效率的下降。
+```
 
 ## Q5
 - Prediction / 预测:
@@ -137,6 +149,9 @@ Stats: IO Busy  5 (71.43%)
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+采用 SWITCH_ON_IO 后，CPU 利用率和总运行时间均得到优化。这是因为该策略遵循‘I/O 阻塞即切换’的原则：一旦进程因 I/O 阻塞，CPU 立刻转去执行其他就绪任务，而不是被动等待 I/O 结束。这种机制最大限度地减少了 CPU 的空闲时间。
+```
 
 ## Q6
 - Prediction / 预测:
@@ -187,6 +202,9 @@ Stats: IO Busy  15 (48.39%)
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+执行过程显示，三个 CPU 密集型进程率先完成，而 PID 0 的 I/O 完成后却未能立即抢占 CPU。受 IO_RUN_LATER 机制影响，PID 0 被延迟调度，错失了连续发起 I/O 请求的最佳时机，导致 CPU 与 I/O 无法有效并行。结果是系统出现了‘CPU 等待 I/O’的空闲窗口，整体资源利用不充分，CPU 利用率低至 67.74%，约有 1/3 的时间被浪费。
+```
 
 ## Q7
 - Prediction / 预测:
@@ -230,6 +248,9 @@ IO_RUN_LATER 与 IO_RUN_IMMEDIATE 的核心区别在于 I/O 完成后的调度�
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+IO_RUN_IMMEDIATE 的好处是‘即完即跑’：I/O 一结束，进程马上接着干，这样就能赶紧把下一个 I/O 任务发出去。这并不是让 CPU 算得更快了，而是通过更聪明的排队方式，让 CPU 和 I/O 设备都能尽量同时工作，少一点空转，多一点并行。
+```
 
 ## Q8
 - Prediction / 预测:
@@ -475,3 +496,6 @@ SWITCH_ON_IO 与 SWITCH_ON_END 决定了 CPU 在进程阻塞时的行为。SWITC
 ```
 - Verified result / 验证结果:
 - Analysis / 分析:
+```
+对于随机生成的进程，SWITCH_ON_IO 的重要性往往更高，因为它解决了‘进程等待时 CPU 干什么’的问题，避免了资源浪费。IO_RUN_IMMEDIATE 则解决了‘I/O 做完后谁先跑’的问题。这两个设置一前一后，共同决定了 CPU 和 I/O 设备能多大程度上并行工作，直接影响系统效率。
+```
